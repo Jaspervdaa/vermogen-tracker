@@ -88,7 +88,7 @@ const expectedNWCorrect = (firstSnap, months, monthly, ar, bkts) => {
 };
 
 // Custom tooltip die exact het dichtstbijzijnde datapunt toont
-const makeTooltip = (color1, color2, name1, name2) => ({ active, payload }) => {
+const TT = ({ active, payload }) => {
   if(!active||!payload?.length) return null;
   const d=payload[0]?.payload;
   if(!d) return null;
@@ -345,7 +345,6 @@ export default function App() {
   );
 
   const vasteGroups=["mat_vaste","fin_vaste"], vlotGroups=["vorderingen","liquide"], activaGroups=["mat_vaste","fin_vaste","vorderingen","liquide"];
-  const TT = makeTooltip();
 
   if(authLoading) return <div style={{minHeight:"100vh",background:BG,display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontFamily:"'Inter',system-ui,sans-serif"}}><div style={{fontSize:14,color:"#8899aa"}}>Laden...</div></div>;
 
