@@ -105,13 +105,51 @@ const SpaarTT = ({active,payload}) => {
       {w!=null&&<div style={{color:GREEN,marginBottom:2}}>Werkelijk ingelegd: {fmt(w)}</div>}
       {doel!=null&&<div style={{color:ORG,marginBottom:2}}>Doel: {fmt(Math.round(doel))}</div>}
       {diff!=null&&<div style={{color:diff>=0?TEAL:RED,fontWeight:700,marginTop:4}}>{diff>=0?"Voor: +":"Achter: "}{fmt(Math.abs(Math.round(diff)))}</div>}
+      {/* PERIODES POPUP */}
+      {showPeriodes&&(
+        <div onClick={()=>setShowPeriodes(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:CARD,borderRadius:16,border:"1px solid #1e3050",maxWidth:900,width:"100%",maxHeight:"80vh",overflow:"auto"}}>
+            <div style={{padding:"20px 24px",borderBottom:"1px solid #1e3050",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:CARD,zIndex:1}}>
+              <div style={{fontSize:15,fontWeight:700}}>Marktrendement per periode</div>
+              <button onClick={()=>setShowPeriodes(false)} style={{background:"transparent",border:"1px solid #2a3a55",color:"#8899aa",borderRadius:8,padding:"5px 14px",cursor:"pointer",fontSize:12}}>Sluiten</button>
+            </div>
+            <div style={{padding:"0 24px 24px"}}>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead><tr style={{borderBottom:"1px solid #1e3050"}}>
+                  {["Periode","Waarde begin","Reg. inleg","Extra stortingen","Verwacht einde","Werkelijk","Marktresultaat","Rendement"].map(h=>(
+                    <th key={h} style={{textAlign:h==="Periode"?"left":"right",padding:"12px 10px",fontSize:10,color:"#667799",fontWeight:600}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {periodeData.map((p,i)=>{ const pos=p.marktResult>=0; return (
+                    <tr key={i} style={{borderBottom:"1px solid #131f35"}}>
+                      <td style={{padding:"11px 10px",fontSize:11,color:"#aabbcc"}}>{fmtDate(p.van)} → {fmtDate(p.tot)}</td>
+                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.prevFv)}</td>
+                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:GREEN}}>{fmt(p.regularInleg)}</td>
+                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:p.totExtraStorting>0?BLUE:"#445566"}}>
+                        {p.extraStortingen.length>0?p.extraStortingen.map((e,j)=>(<div key={j}>{fmt(Number(e.bedrag||0))} <span style={{fontSize:9,color:"#667799"}}>{fmtDate(e.datum)}</span></div>)):"—"}
+                      </td>
+                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.verwacht)}</td>
+                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:PURP,fontWeight:600}}>{fmt(p.werkelijk)}</td>
+                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,fontWeight:700,color:pos?TEAL:RED}}>{pos?"+":""}{fmt(p.marktResult)}</td>
+                      <td style={{padding:"11px 10px",textAlign:"right"}}>
+                        <span style={{background:pos?"rgba(0,229,204,.12)":"rgba(255,68,102,.12)",color:pos?TEAL:RED,padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700}}>{pos?"+":""}{p.marktPct}%</span>
+                      </td>
+                    </tr>);
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // No-spinner input
 const inp = (ex={}) => ({background:CARD2,border:"1px solid #2a3a55",borderRadius:8,padding:"9px 12px",color:"white",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",MozAppearance:"textfield",...ex});
-const clearZero = e => { if(Number(e.target.value)===0) e.target.select(); };
+const clearZero = (e, setter, key) => { if(Number(e.target.value)===0) setter(p=>({...p,values:{...p.values,[key]:""}})); };
 const noSpinner = {WebkitAppearance:"none",MozAppearance:"textfield"};
 
 const EMPTY_INLINE = {name:"",note:""};
@@ -136,7 +174,7 @@ export default function App() {
   const [editingBucket,setEditingBucket]=useState(null); // id of bucket being renamed
   const [editingName,  setEditingName] = useState("");
   const [dragOver,     setDragOver]    = useState(null);
-  const [loaded,       setLoaded]      = useState(false);
+  const [showPeriodes, setShowPeriodes] = useState(false);
   const dragItem = useRef(null);
 
   useEffect(()=>{
@@ -441,23 +479,8 @@ export default function App() {
                 </LineChart>
               </ResponsiveContainer>
               {periodeData.length>0&&(
-                <div style={{marginTop:20}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#8899aa",letterSpacing:.5,marginBottom:10}}>MARKTRENDEMENT PER PERIODE</div>
-                  <table style={{width:"100%",borderCollapse:"collapse"}}>
-                    <thead><tr style={{borderBottom:"1px solid #1e3050"}}>{["Periode","Waarde begin","Reg. inleg","Extra stortingen","Verwacht einde","Werkelijk","Marktresultaat","Rendement"].map(h=>(<th key={h} style={{textAlign:h==="Periode"?"left":"right",padding:"7px 10px",fontSize:10,color:"#667799",fontWeight:600}}>{h}</th>))}</tr></thead>
-                    <tbody>{periodeData.map((p,i)=>{ const pos=p.marktResult>=0; return (<tr key={i} style={{borderBottom:"1px solid #131f35"}}>
-                      <td style={{padding:"9px 10px",fontSize:11,color:"#aabbcc"}}>{fmtDate(p.van)} → {fmtDate(p.tot)}</td>
-                      <td style={{padding:"9px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.prevFv)}</td>
-                      <td style={{padding:"9px 10px",textAlign:"right",fontSize:11,color:GREEN}}>{fmt(p.regularInleg)}</td>
-                      <td style={{padding:"9px 10px",textAlign:"right",fontSize:11,color:p.totExtraStorting>0?BLUE:"#445566"}}>
-                        {p.extraStortingen.length>0?p.extraStortingen.map((e,j)=>(<div key={j}>{fmt(Number(e.bedrag||0))} <span style={{fontSize:9,color:"#667799"}}>{fmtDate(e.datum)}</span></div>)):"—"}
-                      </td>
-                      <td style={{padding:"9px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.verwacht)}</td>
-                      <td style={{padding:"9px 10px",textAlign:"right",fontSize:11,color:PURP,fontWeight:600}}>{fmt(p.werkelijk)}</td>
-                      <td style={{padding:"9px 10px",textAlign:"right",fontSize:11,fontWeight:700,color:pos?TEAL:RED}}>{pos?"+":""}{fmt(p.marktResult)}</td>
-                      <td style={{padding:"9px 10px",textAlign:"right"}}><span style={{background:pos?"rgba(0,229,204,.12)":"rgba(255,68,102,.12)",color:pos?TEAL:RED,padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700}}>{pos?"+":""}{p.marktPct}%</span></td>
-                    </tr>); })}</tbody>
-                  </table>
+                <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}>
+                  <button onClick={()=>setShowPeriodes(true)} style={{background:"rgba(124,92,252,.15)",border:`1px solid ${PURP}`,color:PURP,borderRadius:8,padding:"8px 18px",cursor:"pointer",fontSize:12,fontWeight:600}}>Overzicht periodes →</button>
                 </div>
               )}
             </div>
@@ -582,7 +605,7 @@ export default function App() {
                   </div>
                   {items.map(b=>(<div key={b.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 28px",gap:8,alignItems:"center",marginBottom:10}}>
                     <div><div style={{fontSize:12,fontWeight:500}}>{b.name}</div>{b.note&&<div style={{fontSize:10,color:"#667799"}}>{b.note}</div>}</div>
-                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                    <input type="number" placeholder="0" value={newSnap.values[b.id]??""} onFocus={clearZero} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                    <input type="number" placeholder="0" value={newSnap.values[b.id]??""} onFocus={e=>clearZero(e,setNewSnap,b.id)} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
                     <DeleteBtn onClick={()=>deleteBucket(b.id)}/>
                   </div>))}
                   {items.length===0&&!isAdding&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic",padding:"4px 0"}}>Geen posten — klik op "+ Post".</div>}
@@ -628,7 +651,7 @@ export default function App() {
                 return (<div key={g.id} style={{marginBottom:20}}>
                   {items.map(b=>(<div key={b.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 28px",gap:8,alignItems:"center",marginBottom:10}}>
                     <div><div style={{fontSize:12,fontWeight:500}}>{b.name}</div>{b.note&&<div style={{fontSize:10,color:"#667799"}}>{b.note}</div>}</div>
-                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                      <input type="number" min="0" placeholder="0" value={newSnap.values[b.id]??""} onFocus={clearZero} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                      <input type="number" min="0" placeholder="0" value={newSnap.values[b.id]??""} onFocus={e=>clearZero(e,setNewSnap,b.id)} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
                     <DeleteBtn onClick={()=>deleteBucket(b.id)}/>
                   </div>))}
                   {items.length===0&&!isAdding&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic",padding:"4px 0"}}>Geen schulden.</div>}
