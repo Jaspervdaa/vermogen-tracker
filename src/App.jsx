@@ -111,6 +111,7 @@ const SpaarTT = ({active,payload}) => {
 
 // No-spinner input
 const inp = (ex={}) => ({background:CARD2,border:"1px solid #2a3a55",borderRadius:8,padding:"9px 12px",color:"white",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",MozAppearance:"textfield",...ex});
+const clearZero = e => { if(Number(e.target.value)===0) e.target.select(); };
 const noSpinner = {WebkitAppearance:"none",MozAppearance:"textfield"};
 
 const EMPTY_INLINE = {name:"",note:""};
@@ -581,7 +582,7 @@ export default function App() {
                   </div>
                   {items.map(b=>(<div key={b.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 28px",gap:8,alignItems:"center",marginBottom:10}}>
                     <div><div style={{fontSize:12,fontWeight:500}}>{b.name}</div>{b.note&&<div style={{fontSize:10,color:"#667799"}}>{b.note}</div>}</div>
-                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span><input type="number" placeholder="0" value={newSnap.values[b.id]??""} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                    <input type="number" placeholder="0" value={newSnap.values[b.id]??""} onFocus={clearZero} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
                     <DeleteBtn onClick={()=>deleteBucket(b.id)}/>
                   </div>))}
                   {items.length===0&&!isAdding&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic",padding:"4px 0"}}>Geen posten — klik op "+ Post".</div>}
@@ -627,7 +628,7 @@ export default function App() {
                 return (<div key={g.id} style={{marginBottom:20}}>
                   {items.map(b=>(<div key={b.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 28px",gap:8,alignItems:"center",marginBottom:10}}>
                     <div><div style={{fontSize:12,fontWeight:500}}>{b.name}</div>{b.note&&<div style={{fontSize:10,color:"#667799"}}>{b.note}</div>}</div>
-                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span><input type="number" min="0" placeholder="0" value={newSnap.values[b.id]??""} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                      <input type="number" min="0" placeholder="0" value={newSnap.values[b.id]??""} onFocus={clearZero} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
                     <DeleteBtn onClick={()=>deleteBucket(b.id)}/>
                   </div>))}
                   {items.length===0&&!isAdding&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic",padding:"4px 0"}}>Geen schulden.</div>}
