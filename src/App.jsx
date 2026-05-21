@@ -87,21 +87,12 @@ const expectedNWCorrect = (firstSnap, months, monthly, ar, bkts) => {
   return rest+expectedFV(finStart,months,monthly,ar);
 };
 
-// Custom tooltip die exact het dichtstbijzijnde datapunt toont
-const TT = ({ active, payload }) => {
-  if(!active||!payload?.length) return null;
-  const d=payload[0]?.payload;
-  if(!d) return null;
-  const label = d.fullDate ? fmtDate(d.fullDate) : fmtDate(d.label);
-  return (
-    <div style={{background:CARD2,border:"1px solid #2a3a55",borderRadius:8,padding:"10px 14px",fontSize:12}}>
-      <div style={{color:"#8899bb",marginBottom:6,fontWeight:600}}>{label}</div>
-      {payload.filter(p=>p.value!=null).map((p,i)=>(
-        <div key={i} style={{color:p.color,marginBottom:2}}>{p.name}: {fmt(p.value)}</div>
-      ))}
-    </div>
-  );
+const tooltipStyle = {
+  background:CARD2, border:"1px solid #2a3a55", borderRadius:8,
+  padding:"10px 14px", fontSize:12
 };
+const tooltipLabelStyle = { color:"#8899bb", marginBottom:6, fontWeight:600 };
+const tooltipItemStyle  = { padding:"2px 0" };
 
 const SpaarTT = ({active,payload}) => {
   if(!active||!payload?.length) return null;
@@ -415,7 +406,12 @@ export default function App() {
                 <LineChart data={chartData}>
                   <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(0)+"k"}/>
-                  <Tooltip content={<TT/>} isAnimationActive={false}/>
+                  <Tooltip
+                    isAnimationActive={false}
+                    contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle}
+                    labelFormatter={(lbl,pl)=>{ const fd=pl?.[0]?.payload?.fullDate; return fd?fmtDate(fd):fmtDate(lbl); }}
+                    formatter={(v,n,p)=>[fmt(v),n]}
+                  />
                   <ReferenceLine y={0} stroke="#2a3a55"/>
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={TEAL} strokeWidth={3} dot={{fill:TEAL,r:5}} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="verwacht"  name="Verwacht"  stroke={PURP} strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
@@ -433,7 +429,12 @@ export default function App() {
                 <LineChart data={beleggingData}>
                   <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(1)+"k"}/>
-                  <Tooltip content={<TT/>} isAnimationActive={false}/>
+                  <Tooltip
+                    isAnimationActive={false}
+                    contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle}
+                    labelFormatter={(lbl,pl)=>{ const fd=pl?.[0]?.payload?.fullDate; return fd?fmtDate(fd):fmtDate(lbl); }}
+                    formatter={(v,n)=>[fmt(v),n]}
+                  />
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={PURP} strokeWidth={3} dot={{fill:PURP,r:5}} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="verwacht"  name="Verwacht"  stroke={ORG}  strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
                 </LineChart>
@@ -470,7 +471,18 @@ export default function App() {
                 <LineChart data={spaarData}>
                   <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(1)+"k"}/>
-                  <Tooltip content={<SpaarTT/>} isAnimationActive={false}/>
+                  <Tooltip
+                    isAnimationActive={false}
+                    contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle}
+                    labelFormatter={(lbl,pl)=>{
+                      const d=pl?.[0]?.payload;
+                      const displayLabel=d?.fullDate?fmtDate(d.fullDate):fmtDate(lbl);
+                      const w=d?.werkelijk, doel=d?.doel;
+                      if(w!=null&&doel!=null){ const diff=w-doel; return displayLabel+" • "+(diff>=0?"Voor: +":"Achter: ")+fmt(Math.abs(Math.round(diff))); }
+                      return displayLabel;
+                    }}
+                    formatter={(v,n)=>[fmt(v),n]}
+                  />
                   <ReferenceLine y={0} stroke="#2a3a55"/>
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={GREEN} strokeWidth={3} dot={d=>d.payload?.isSnapshot?<circle key={d.key} cx={d.cx} cy={d.cy} r={5} fill={GREEN}/>:null} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="doel"      name="Doel"      stroke={ORG}   strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
