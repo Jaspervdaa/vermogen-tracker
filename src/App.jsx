@@ -414,7 +414,7 @@ export default function App() {
                 <LineChart data={chartData}>
                   <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(0)+"k"}/>
-                  <Tooltip content={<TT/>}/>
+                  <Tooltip content={<TT/>} isAnimationActive={false}/>
                   <ReferenceLine y={0} stroke="#2a3a55"/>
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={TEAL} strokeWidth={3} dot={{fill:TEAL,r:5}} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="verwacht"  name="Verwacht"  stroke={PURP} strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
@@ -432,7 +432,7 @@ export default function App() {
                 <LineChart data={beleggingData}>
                   <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(1)+"k"}/>
-                  <Tooltip content={<TT/>}/>
+                  <Tooltip content={<TT/>} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={PURP} strokeWidth={3} dot={{fill:PURP,r:5}} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="verwacht"  name="Verwacht"  stroke={ORG}  strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
                 </LineChart>
@@ -469,7 +469,7 @@ export default function App() {
                 <LineChart data={spaarData}>
                   <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(1)+"k"}/>
-                  <Tooltip content={<SpaarTT/>}/>
+                  <Tooltip content={<SpaarTT/>} isAnimationActive={false}/>
                   <ReferenceLine y={0} stroke="#2a3a55"/>
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={GREEN} strokeWidth={3} dot={d=>d.payload?.isSnapshot?<circle key={d.key} cx={d.cx} cy={d.cy} r={5} fill={GREEN}/>:null} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="doel"      name="Doel"      stroke={ORG}   strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
