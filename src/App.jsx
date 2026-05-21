@@ -234,7 +234,7 @@ export default function App() {
     if(!first) return [];
     const data=[];
     sorted.forEach((s,i)=>{
-      const fv=finVaste(s), label=s.date.slice(0,7);
+      const fv=finVaste(s), label=s.date; // volledige datum als label
       if(i===0){ data.push({label,fullDate:s.date,werkelijk:fv,verwacht:fv}); return; }
       const prev=sorted[i-1], prevFv=finVaste(prev), months=monthsBetween(prev.date,s.date);
       const extraStortingen=s.extraStortingen||[];
@@ -243,7 +243,7 @@ export default function App() {
         const dStr=d.toISOString().slice(0,10);
         let v=discreteExpectedFV(prevFv,prev.date,dStr,monthly,annualReturn/100);
         extraStortingen.forEach(e=>{ const eDate=e.datum||s.date; if(new Date(dStr)>=new Date(eDate)){ v+=Number(e.bedrag||0)*Math.pow(1+mr,Math.max(0,monthsBetween(eDate,dStr))); } });
-        data.push({label:d.toISOString().slice(0,7),fullDate:null,werkelijk:null,verwacht:Math.round(v)});
+        data.push({label:dStr,fullDate:null,werkelijk:null,verwacht:Math.round(v)});
       }
       let endVerwacht=discreteExpectedFV(prevFv,prev.date,s.date,monthly,annualReturn/100);
       extraStortingen.forEach(e=>{ const eDate=e.datum||s.date; endVerwacht+=Number(e.bedrag||0)*Math.pow(1+mr,Math.max(0,monthsBetween(eDate,s.date))); });
@@ -252,7 +252,8 @@ export default function App() {
     const latestFv=finVaste(latest), tot=monthsBetween(first.date,latest.date);
     for(let i=1;i<=12;i++){
       const d=new Date(first.date); d.setMonth(d.getMonth()+tot+i);
-      data.push({label:d.toISOString().slice(0,7),fullDate:null,werkelijk:null,verwacht:expectedFV(latestFv,i,monthly,annualReturn/100)});
+      const dStr=d.toISOString().slice(0,7);
+      data.push({label:dStr,fullDate:null,werkelijk:null,verwacht:expectedFV(latestFv,i,monthly,annualReturn/100)});
     }
     return data;
   })();
@@ -260,16 +261,16 @@ export default function App() {
   const spaarData=(()=>{
     if(!first) return [];
     let cumInleg=0;
-    const snapshotLabels=new Set(sorted.map(s=>s.date.slice(0,7)));
+    const snapshotDates=new Set(sorted.map(s=>s.date));
     const data=sorted.map(s=>{
       cumInleg+=Number(s.regularInleg||0);
-      return {label:s.date.slice(0,7),fullDate:s.date,werkelijk:cumInleg,doel:monthly*monthsBetween(first.date,s.date),isSnapshot:true};
+      return {label:s.date,fullDate:s.date,werkelijk:cumInleg,doel:monthly*monthsBetween(first.date,s.date),isSnapshot:true};
     });
     const tot=monthsBetween(first.date,latest.date);
     for(let i=1;i<=12;i++){
       const d=new Date(first.date); d.setMonth(d.getMonth()+tot+i);
       const lbl=d.toISOString().slice(0,7);
-      if(!snapshotLabels.has(lbl)) data.push({label:lbl,fullDate:null,werkelijk:null,doel:monthly*(tot+i),isSnapshot:false});
+      data.push({label:lbl,fullDate:null,werkelijk:null,doel:monthly*(tot+i),isSnapshot:false});
     }
     return data;
   })();
