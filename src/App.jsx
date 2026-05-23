@@ -390,22 +390,20 @@ export default function App() {
                   <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#8899aa",letterSpacing:.4}}>TOTAAL MARKTRESULTAAT</div><div style={{fontSize:18,fontWeight:800,color:totaalMarktResult>=0?TEAL:RED}}>{totaalMarktResult>=0?"+":""}{fmt(totaalMarktResult)}</div><div style={{fontSize:10,color:"#556677"}}>op kostenbasis {fmt(totaleKb)}</div></div>
                   {(()=>{
                     if(periodeData.length===0) return null;
-                    // TWR: combineer alle periode rendementen
+                    // TWR: per periode = (eindwaarde - startwaarde - inleg) / startwaarde
                     const twr = periodeData.reduce((acc,p)=>{
-                      const periodeR = (p.werkelijk - p.verwachtZonderRendement) / p.prevFv;
+                      const periodeR = (p.werkelijk - p.prevFv - p.totaleInleg) / p.prevFv;
                       return acc * (1 + periodeR);
                     }, 1) - 1;
-                    // Totaal aantal dagen
                     const totalDays = periodeData.reduce((s,p)=>s+monthsBetween(p.van,p.tot)*30.4375, 0);
-                    // Annualiseer
-                    const annualized = Math.pow(1 + twr, 365/totalDays) - 1;
-                    const pct = (annualized*100).toFixed(1);
+                    if(totalDays < 1) return null;
+                    const annualized = (Math.pow(1 + twr, 365/totalDays) - 1) * 100;
                     const pos = annualized >= 0;
                     const maanden = Math.round(totalDays/30.4375);
                     return (
                       <div style={{textAlign:"right",borderLeft:"1px solid #1e3050",paddingLeft:14}}>
                         <div style={{fontSize:10,color:"#8899aa",letterSpacing:.4}}>LOPEND JAARRENDEMENT</div>
-                        <div style={{fontSize:18,fontWeight:800,color:pos?TEAL:RED}}>{pos?"+":""}{pct}%</div>
+                        <div style={{fontSize:18,fontWeight:800,color:pos?TEAL:RED}}>{pos?"+":""}{annualized.toFixed(1)}%</div>
                         <div style={{fontSize:10,color:"#556677"}}>op basis van {maanden} mnd data</div>
                       </div>
                     );
