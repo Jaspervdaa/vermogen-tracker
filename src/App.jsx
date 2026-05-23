@@ -386,8 +386,30 @@ export default function App() {
             <div style={card()}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
                 <div><div style={{fontSize:14,fontWeight:700}}>Beleggingen — Werkelijk vs. Verwacht</div><div style={{fontSize:11,color:"#556677",marginTop:2}}>Inleg op de 20ste · extra stortingen op exacte datum · {annualReturn}%</div></div>
-                <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
                   <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#8899aa",letterSpacing:.4}}>TOTAAL MARKTRESULTAAT</div><div style={{fontSize:18,fontWeight:800,color:totaalMarktResult>=0?TEAL:RED}}>{totaalMarktResult>=0?"+":""}{fmt(totaalMarktResult)}</div><div style={{fontSize:10,color:"#556677"}}>op kostenbasis {fmt(totaleKb)}</div></div>
+                  {(()=>{
+                    if(periodeData.length===0) return null;
+                    // TWR: combineer alle periode rendementen
+                    const twr = periodeData.reduce((acc,p)=>{
+                      const periodeR = (p.werkelijk - p.verwachtZonderRendement) / p.prevFv;
+                      return acc * (1 + periodeR);
+                    }, 1) - 1;
+                    // Totaal aantal dagen
+                    const totalDays = periodeData.reduce((s,p)=>s+monthsBetween(p.van,p.tot)*30.4375, 0);
+                    // Annualiseer
+                    const annualized = Math.pow(1 + twr, 365/totalDays) - 1;
+                    const pct = (annualized*100).toFixed(1);
+                    const pos = annualized >= 0;
+                    const maanden = Math.round(totalDays/30.4375);
+                    return (
+                      <div style={{textAlign:"right",borderLeft:"1px solid #1e3050",paddingLeft:14}}>
+                        <div style={{fontSize:10,color:"#8899aa",letterSpacing:.4}}>LOPEND JAARRENDEMENT</div>
+                        <div style={{fontSize:18,fontWeight:800,color:pos?TEAL:RED}}>{pos?"+":""}{pct}%</div>
+                        <div style={{fontSize:10,color:"#556677"}}>op basis van {maanden} mnd data</div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={180}>
