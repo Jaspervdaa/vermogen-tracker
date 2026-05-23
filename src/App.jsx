@@ -87,94 +87,36 @@ const expectedNWCorrect = (firstSnap, months, monthly, ar, bkts) => {
   return rest+expectedFV(finStart,months,monthly,ar);
 };
 
-const tooltipStyle = {
-  background:CARD2, border:"1px solid #2a3a55", borderRadius:8,
-  padding:"10px 14px", fontSize:12
-};
-const tooltipLabelStyle = { color:"#8899bb", marginBottom:6, fontWeight:600 };
-const tooltipItemStyle  = { padding:"2px 0" };
+const ttStyle  = {background:CARD2,border:"1px solid #2a3a55",borderRadius:8,padding:"10px 14px",fontSize:12};
+const ttLabel  = {color:"#8899bb",marginBottom:6,fontWeight:600};
+const ttItem   = {padding:"2px 0"};
 
-const SpaarTT = ({active,payload}) => {
-  if(!active||!payload?.length) return null;
-  const d=payload[0]?.payload; if(!d) return null;
-  const label = d.fullDate ? fmtDate(d.fullDate) : fmtDate(d.label);
-  const w=d.werkelijk, doel=d.doel, diff=w!=null&&doel!=null?w-doel:null;
-  return (
-    <div style={{background:CARD2,border:"1px solid #2a3a55",borderRadius:8,padding:"10px 14px",fontSize:12}}>
-      <div style={{color:"#8899bb",marginBottom:6,fontWeight:600}}>{label}</div>
-      {w!=null&&<div style={{color:GREEN,marginBottom:2}}>Werkelijk ingelegd: {fmt(w)}</div>}
-      {doel!=null&&<div style={{color:ORG,marginBottom:2}}>Doel: {fmt(Math.round(doel))}</div>}
-      {diff!=null&&<div style={{color:diff>=0?TEAL:RED,fontWeight:700,marginTop:4}}>{diff>=0?"Voor: +":"Achter: "}{fmt(Math.abs(Math.round(diff)))}</div>}
-      {/* PERIODES POPUP */}
-      {showPeriodes&&(
-        <div onClick={()=>setShowPeriodes(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:CARD,borderRadius:16,border:"1px solid #1e3050",maxWidth:900,width:"100%",maxHeight:"80vh",overflow:"auto"}}>
-            <div style={{padding:"20px 24px",borderBottom:"1px solid #1e3050",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:CARD,zIndex:1}}>
-              <div style={{fontSize:15,fontWeight:700}}>Marktrendement per periode</div>
-              <button onClick={()=>setShowPeriodes(false)} style={{background:"transparent",border:"1px solid #2a3a55",color:"#8899aa",borderRadius:8,padding:"5px 14px",cursor:"pointer",fontSize:12}}>Sluiten</button>
-            </div>
-            <div style={{padding:"0 24px 24px"}}>
-              <table style={{width:"100%",borderCollapse:"collapse"}}>
-                <thead><tr style={{borderBottom:"1px solid #1e3050"}}>
-                  {["Periode","Waarde begin","Reg. inleg","Extra stortingen","Verwacht einde","Werkelijk","Marktresultaat","Rendement"].map(h=>(
-                    <th key={h} style={{textAlign:h==="Periode"?"left":"right",padding:"12px 10px",fontSize:10,color:"#667799",fontWeight:600}}>{h}</th>
-                  ))}
-                </tr></thead>
-                <tbody>
-                  {periodeData.map((p,i)=>{ const pos=p.marktResult>=0; return (
-                    <tr key={i} style={{borderBottom:"1px solid #131f35"}}>
-                      <td style={{padding:"11px 10px",fontSize:11,color:"#aabbcc"}}>{fmtDate(p.van)} → {fmtDate(p.tot)}</td>
-                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.prevFv)}</td>
-                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:GREEN}}>{fmt(p.regularInleg)}</td>
-                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:p.totExtraStorting>0?BLUE:"#445566"}}>
-                        {p.extraStortingen.length>0?p.extraStortingen.map((e,j)=>(<div key={j}>{fmt(Number(e.bedrag||0))} <span style={{fontSize:9,color:"#667799"}}>{fmtDate(e.datum)}</span></div>)):"—"}
-                      </td>
-                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.verwacht)}</td>
-                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:PURP,fontWeight:600}}>{fmt(p.werkelijk)}</td>
-                      <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,fontWeight:700,color:pos?TEAL:RED}}>{pos?"+":""}{fmt(p.marktResult)}</td>
-                      <td style={{padding:"11px 10px",textAlign:"right"}}>
-                        <span style={{background:pos?"rgba(0,229,204,.12)":"rgba(255,68,102,.12)",color:pos?TEAL:RED,padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700}}>{pos?"+":""}{p.marktPct}%</span>
-                      </td>
-                    </tr>);
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// No-spinner input
-const inp = (ex={}) => ({background:CARD2,border:"1px solid #2a3a55",borderRadius:8,padding:"9px 12px",color:"white",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",MozAppearance:"textfield",...ex});
-const clearZero = (e, setter, key) => { if(Number(e.target.value)===0) setter(p=>({...p,values:{...p.values,[key]:""}})); };
-const noSpinner = {WebkitAppearance:"none",MozAppearance:"textfield"};
-
+const inp = (ex={}) => ({background:CARD2,border:"1px solid #2a3a55",borderRadius:8,padding:"9px 12px",color:"white",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",...ex});
+const noSpin = {WebkitAppearance:"none",MozAppearance:"textfield"};
 const EMPTY_INLINE = {name:"",note:""};
 
 const saveToFirebase = async (uid,key,value) => { try { await setDoc(doc(db,"users",uid,"data",key),{value:JSON.stringify(value)},{merge:true}); } catch(e){ console.error(e); } };
 const loadFromFirebase = async (uid,key) => { try { const s=await getDoc(doc(db,"users",uid,"data",key)); if(s.exists()) return JSON.parse(s.data().value); } catch(e){ console.error(e); } return null; };
 
 export default function App() {
-  const [user,         setUser]        = useState(null);
-  const [authLoading,  setAuthLoading] = useState(true);
-  const [buckets,      setBuckets]     = useState(DEFAULT_BUCKETS);
-  const [snapshots,    setSnapshots]   = useState(DEFAULT_SNAPSHOTS);
-  const [view,         setView]        = useState("overzicht");
-  const [monthly,      setMonthly]     = useState(500);
-  const [annualReturn, setAnnualReturn]= useState(7);
-  const [startKb,      setStartKb]     = useState(7500);
-  const [newSnap,      setNewSnap]     = useState({date:new Date().toISOString().slice(0,10),values:{...S2V},regularInleg:500,extraStortingen:[]});
-  const [editIdx,      setEditIdx]     = useState(null);
-  const [inlineAdd,    setInlineAdd]   = useState(null);
-  const [inlineForm,   setInlineForm]  = useState(EMPTY_INLINE);
-  const [newBucket,    setNewBucket]   = useState({name:"",group:"liquide",note:""});
-  const [editingBucket,setEditingBucket]=useState(null); // id of bucket being renamed
-  const [editingName,  setEditingName] = useState("");
-  const [dragOver,     setDragOver]    = useState(null);
-  const [showPeriodes, setShowPeriodes] = useState(false);
+  const [user,          setUser]          = useState(null);
+  const [authLoading,   setAuthLoading]   = useState(true);
+  const [buckets,       setBuckets]       = useState(DEFAULT_BUCKETS);
+  const [snapshots,     setSnapshots]     = useState(DEFAULT_SNAPSHOTS);
+  const [view,          setView]          = useState("overzicht");
+  const [monthly,       setMonthly]       = useState(500);
+  const [annualReturn,  setAnnualReturn]  = useState(7);
+  const [startKb,       setStartKb]       = useState(7500);
+  const [newSnap,       setNewSnap]       = useState({date:new Date().toISOString().slice(0,10),values:{...S2V},regularInleg:500,extraStortingen:[]});
+  const [editIdx,       setEditIdx]       = useState(null);
+  const [inlineAdd,     setInlineAdd]     = useState(null);
+  const [inlineForm,    setInlineForm]    = useState(EMPTY_INLINE);
+  const [newBucket,     setNewBucket]     = useState({name:"",group:"liquide",note:""});
+  const [editingBucket, setEditingBucket] = useState(null);
+  const [editingName,   setEditingName]   = useState("");
+  const [dragOver,      setDragOver]      = useState(null);
+  const [showPeriodes,  setShowPeriodes]  = useState(false);
+  const [loaded,        setLoaded]        = useState(false);
   const dragItem = useRef(null);
 
   useEffect(()=>{
@@ -243,19 +185,13 @@ export default function App() {
       const extraStortingen=s.extraStortingen||[];
       const totExtraStorting=totalExtraStorting(s);
       const totaleInleg=regularInleg+totExtraStorting;
-      // Verwacht: discrete €500 inleg + elke extra storting rendeert vanaf zijn eigen datum
       let verwachtEinde=discreteExpectedFV(prevFv,prev.date,s.date,monthly,annualReturn/100);
-      extraStortingen.forEach(e=>{
-        const eDate=e.datum||s.date;
-        const mRem=Math.max(0,monthsBetween(eDate,s.date));
-        verwachtEinde+=Number(e.bedrag||0)*Math.pow(1+mr,mRem);
-      });
-      const verwachtZonderRendement=prevFv+totaleInleg;
+      extraStortingen.forEach(e=>{ const eDate=e.datum||s.date; const mRem=Math.max(0,monthsBetween(eDate,s.date)); verwachtEinde+=Number(e.bedrag||0)*Math.pow(1+mr,mRem); });
       const marktResult=werkelijk-Math.round(verwachtEinde);
       const marktPct=prevFv>0?(marktResult/prevFv*100).toFixed(1):"0.0";
       const verwachtInleg=monthly*months, inlegVerschil=regularInleg-verwachtInleg;
       return {van:prev.date,tot:s.date,months,prevFv,werkelijk,verwacht:Math.round(verwachtEinde),
-              verwachtZonderRendement,totaleInleg,regularInleg,extraStortingen,totExtraStorting,
+              totaleInleg,regularInleg,extraStortingen,totExtraStorting,
               marktResult,marktPct,verwachtInleg,inlegVerschil};
     });
   })();
@@ -264,7 +200,7 @@ export default function App() {
     if(!first) return [];
     const data=[];
     sorted.forEach((s,i)=>{
-      const fv=finVaste(s), label=s.date; // volledige datum als label
+      const fv=finVaste(s), label=s.date;
       if(i===0){ data.push({label,fullDate:s.date,werkelijk:fv,verwacht:fv}); return; }
       const prev=sorted[i-1], prevFv=finVaste(prev), months=monthsBetween(prev.date,s.date);
       const extraStortingen=s.extraStortingen||[];
@@ -282,8 +218,7 @@ export default function App() {
     const latestFv=finVaste(latest), tot=monthsBetween(first.date,latest.date);
     for(let i=1;i<=12;i++){
       const d=new Date(first.date); d.setMonth(d.getMonth()+tot+i);
-      const dStr=d.toISOString().slice(0,7);
-      data.push({label:dStr,fullDate:null,werkelijk:null,verwacht:expectedFV(latestFv,i,monthly,annualReturn/100)});
+      data.push({label:d.toISOString().slice(0,7),fullDate:null,werkelijk:null,verwacht:expectedFV(latestFv,i,monthly,annualReturn/100)});
     }
     return data;
   })();
@@ -291,7 +226,6 @@ export default function App() {
   const spaarData=(()=>{
     if(!first) return [];
     let cumInleg=0;
-    const snapshotDates=new Set(sorted.map(s=>s.date));
     const data=sorted.map(s=>{
       cumInleg+=Number(s.regularInleg||0);
       return {label:s.date,fullDate:s.date,werkelijk:cumInleg,doel:monthly*monthsBetween(first.date,s.date),isSnapshot:true};
@@ -299,8 +233,7 @@ export default function App() {
     const tot=monthsBetween(first.date,latest.date);
     for(let i=1;i<=12;i++){
       const d=new Date(first.date); d.setMonth(d.getMonth()+tot+i);
-      const lbl=d.toISOString().slice(0,7);
-      data.push({label:lbl,fullDate:null,werkelijk:null,doel:monthly*(tot+i),isSnapshot:false});
+      data.push({label:d.toISOString().slice(0,7),fullDate:null,werkelijk:null,doel:monthly*(tot+i),isSnapshot:false});
     }
     return data;
   })();
@@ -336,28 +269,21 @@ export default function App() {
   };
   const addBucket=()=>{ if(!newBucket.name) return; setBuckets(p=>[...p,{...newBucket,id:Date.now()}]); setNewBucket({name:"",group:"liquide",note:""}); };
 
-  // Drag & drop voor posten binnen dezelfde groep
+  const addExtraStorting=()=>setNewSnap(p=>({...p,extraStortingen:[...(p.extraStortingen||[]),{id:Date.now(),bedrag:"",datum:p.date}]}));
+  const updateExtraStorting=(id,field,val)=>setNewSnap(p=>({...p,extraStortingen:p.extraStortingen.map(e=>e.id===id?{...e,[field]:val}:e)}));
+  const removeExtraStorting=id=>setNewSnap(p=>({...p,extraStortingen:p.extraStortingen.filter(e=>e.id!==id)}));
+
   const handleDragStart=(e,id)=>{ dragItem.current=id; e.dataTransfer.effectAllowed="move"; };
   const handleDragOver=(e,id)=>{ e.preventDefault(); setDragOver(id); };
   const handleDrop=(e,targetId)=>{
     e.preventDefault();
-    const fromId=dragItem.current;
-    if(fromId===targetId) return;
-    setBuckets(prev=>{
-      const arr=[...prev];
-      const fromIdx=arr.findIndex(b=>b.id===fromId);
-      const toIdx=arr.findIndex(b=>b.id===targetId);
-      const [item]=arr.splice(fromIdx,1);
-      arr.splice(toIdx,0,item);
-      return arr;
-    });
+    const fromId=dragItem.current; if(fromId===targetId) return;
+    setBuckets(prev=>{ const arr=[...prev]; const fi=arr.findIndex(b=>b.id===fromId); const ti=arr.findIndex(b=>b.id===targetId); const [item]=arr.splice(fi,1); arr.splice(ti,0,item); return arr; });
     setDragOver(null); dragItem.current=null;
   };
 
-  // Extra stortingen helpers
-  const addExtraStorting=()=>setNewSnap(p=>({...p,extraStortingen:[...(p.extraStortingen||[]),{id:Date.now(),bedrag:"",datum:p.date}]}));
-  const updateExtraStorting=(id,field,val)=>setNewSnap(p=>({...p,extraStortingen:p.extraStortingen.map(e=>e.id===id?{...e,[field]:val}:e)}));
-  const removeExtraStorting=id=>setNewSnap(p=>({...p,extraStortingen:p.extraStortingen.filter(e=>e.id!==id)}));
+  // Clear zero on focus
+  const clearZero=(e,id)=>{ if(Number(e.target.value)===0) setNewSnap(p=>({...p,values:{...p.values,[id]:""}})); };
 
   const card=(ex={})=>({background:CARD,borderRadius:16,padding:20,border:"1px solid #1e3050",...ex});
   const DeleteBtn=({onClick})=>(
@@ -376,6 +302,9 @@ export default function App() {
   );
 
   const vasteGroups=["mat_vaste","fin_vaste"], vlotGroups=["vorderingen","liquide"], activaGroups=["mat_vaste","fin_vaste","vorderingen","liquide"];
+
+  const ttLabelFmt=(lbl,pl)=>{ const fd=pl?.[0]?.payload?.fullDate; return fd?fmtDate(fd):fmtDate(lbl); };
+  const ttFmt=(v)=>fmt(v);
 
   if(authLoading) return <div style={{minHeight:"100vh",background:BG,display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontFamily:"'Inter',system-ui,sans-serif"}}><div style={{fontSize:14,color:"#8899aa"}}>Laden...</div></div>;
 
@@ -429,7 +358,7 @@ export default function App() {
               <div style={card()}><div style={{fontSize:11,color:"#8899aa",marginBottom:4}}>Vs. Verwachting</div><div style={{fontSize:24,fontWeight:800,color:diff>=0?TEAL:RED}}>{diff>=0?"+":""}{fmt(diff)}</div><div style={{fontSize:11,color:"#8899aa",marginTop:4}}>{diff>=0?"Voor op schema":"Achter op schema"}</div></div>
               <div style={card()}>
                 <div style={{fontSize:11,color:"#8899aa",marginBottom:6}}>Inleg per maand</div>
-                <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:"#8899aa",fontSize:16}}>€</span><input type="number" value={monthly} onChange={e=>setMonthly(Number(e.target.value))} style={{...noSpinner,background:"transparent",border:"none",borderBottom:`1px solid ${PURP}`,color:PURP,fontSize:22,fontWeight:800,width:"100%",outline:"none",padding:"2px 0"}}/></div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:"#8899aa",fontSize:16}}>€</span><input type="number" value={monthly} onChange={e=>setMonthly(Number(e.target.value))} style={{...noSpin,background:"transparent",border:"none",borderBottom:`1px solid ${PURP}`,color:PURP,fontSize:22,fontWeight:800,width:"100%",outline:"none",padding:"2px 0"}}/></div>
                 <div style={{fontSize:11,color:"#8899aa",marginTop:6}}>{annualReturn}% rendement / jaar</div>
               </div>
               <div style={card()}><div style={{fontSize:11,color:"#8899aa",marginBottom:4}}>Verwacht over 12 mnd</div><div style={{fontSize:24,fontWeight:800,color:ORG}}>{fmt(expectedNWCorrect(latest?{date:latest.date,values:latest.values}:null,12,monthly,annualReturn/100,buckets))}</div><div style={{fontSize:11,color:"#8899aa",marginTop:4}}>prognose</div></div>
@@ -443,14 +372,9 @@ export default function App() {
               </div>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData}>
-                  <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
+                  <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fmtDate(v)}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(0)+"k"}/>
-                  <Tooltip
-                    isAnimationActive={false}
-                    contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle}
-                    labelFormatter={(lbl,pl)=>{ const fd=pl?.[0]?.payload?.fullDate; return fd?fmtDate(fd):fmtDate(lbl); }}
-                    formatter={(v,n,p)=>[fmt(v),n]}
-                  />
+                  <Tooltip isAnimationActive={false} contentStyle={ttStyle} labelStyle={ttLabel} itemStyle={ttItem} labelFormatter={ttLabelFmt} formatter={ttFmt}/>
                   <ReferenceLine y={0} stroke="#2a3a55"/>
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={TEAL} strokeWidth={3} dot={{fill:TEAL,r:5}} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="verwacht"  name="Verwacht"  stroke={PURP} strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
@@ -462,25 +386,22 @@ export default function App() {
             <div style={card()}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
                 <div><div style={{fontSize:14,fontWeight:700}}>Beleggingen — Werkelijk vs. Verwacht</div><div style={{fontSize:11,color:"#556677",marginTop:2}}>Inleg op de 20ste · extra stortingen op exacte datum · {annualReturn}%</div></div>
-                <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#8899aa",letterSpacing:.4}}>TOTAAL MARKTRESULTAAT</div><div style={{fontSize:18,fontWeight:800,color:totaalMarktResult>=0?TEAL:RED}}>{totaalMarktResult>=0?"+":""}{fmt(totaalMarktResult)}</div><div style={{fontSize:10,color:"#556677"}}>op kostenbasis {fmt(totaleKb)}</div></div>
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#8899aa",letterSpacing:.4}}>TOTAAL MARKTRESULTAAT</div><div style={{fontSize:18,fontWeight:800,color:totaalMarktResult>=0?TEAL:RED}}>{totaalMarktResult>=0?"+":""}{fmt(totaalMarktResult)}</div><div style={{fontSize:10,color:"#556677"}}>op kostenbasis {fmt(totaleKb)}</div></div>
+                </div>
               </div>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={beleggingData}>
-                  <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
+                  <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fmtDate(v)}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(1)+"k"}/>
-                  <Tooltip
-                    isAnimationActive={false}
-                    contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle}
-                    labelFormatter={(lbl,pl)=>{ const fd=pl?.[0]?.payload?.fullDate; return fd?fmtDate(fd):fmtDate(lbl); }}
-                    formatter={(v,n)=>[fmt(v),n]}
-                  />
+                  <Tooltip isAnimationActive={false} contentStyle={ttStyle} labelStyle={ttLabel} itemStyle={ttItem} labelFormatter={ttLabelFmt} formatter={ttFmt}/>
                   <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={PURP} strokeWidth={3} dot={{fill:PURP,r:5}} connectNulls={false} isAnimationActive={false}/>
                   <Line type="monotone" dataKey="verwacht"  name="Verwacht"  stroke={ORG}  strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
                 </LineChart>
               </ResponsiveContainer>
               {periodeData.length>0&&(
-                <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}>
-                  <button onClick={()=>setShowPeriodes(true)} style={{background:"rgba(124,92,252,.15)",border:`1px solid ${PURP}`,color:PURP,borderRadius:8,padding:"8px 18px",cursor:"pointer",fontSize:12,fontWeight:600}}>Overzicht periodes →</button>
+                <div style={{marginTop:14,display:"flex",justifyContent:"flex-end"}}>
+                  <button onClick={()=>setShowPeriodes(true)} style={{background:"rgba(124,92,252,.15)",border:`1px solid ${PURP}`,color:PURP,borderRadius:8,padding:"8px 20px",cursor:"pointer",fontSize:12,fontWeight:600}}>Overzicht periodes →</button>
                 </div>
               )}
             </div>
@@ -493,23 +414,21 @@ export default function App() {
               </div>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={spaarData}>
-                  <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false}/>
+                  <XAxis dataKey="label" tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fmtDate(v)}/>
                   <YAxis tick={{fill:"#8899aa",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>"€"+(v/1000).toFixed(1)+"k"}/>
-                  <Tooltip
-                    isAnimationActive={false}
-                    contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle}
+                  <Tooltip isAnimationActive={false} contentStyle={ttStyle} labelStyle={ttLabel} itemStyle={ttItem}
                     labelFormatter={(lbl,pl)=>{
                       const d=pl?.[0]?.payload;
                       const displayLabel=d?.fullDate?fmtDate(d.fullDate):fmtDate(lbl);
                       const w=d?.werkelijk, doel=d?.doel;
-                      if(w!=null&&doel!=null){ const diff=w-doel; return displayLabel+" • "+(diff>=0?"Voor: +":"Achter: ")+fmt(Math.abs(Math.round(diff))); }
+                      if(w!=null&&doel!=null){ const diff=w-doel; return displayLabel+" — "+(diff>=0?"Voor: +":"Achter: ")+fmt(Math.abs(Math.round(diff))); }
                       return displayLabel;
                     }}
-                    formatter={(v,n)=>[fmt(v),n]}
+                    formatter={ttFmt}
                   />
                   <ReferenceLine y={0} stroke="#2a3a55"/>
-                  <Line type="monotone" dataKey="werkelijk" name="Werkelijk" stroke={GREEN} strokeWidth={3} dot={d=>d.payload?.isSnapshot?<circle key={d.key} cx={d.cx} cy={d.cy} r={5} fill={GREEN}/>:null} connectNulls={false} isAnimationActive={false}/>
-                  <Line type="monotone" dataKey="doel"      name="Doel"      stroke={ORG}   strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
+                  <Line type="monotone" dataKey="werkelijk" name="Werkelijk ingelegd" stroke={GREEN} strokeWidth={3} dot={d=>d.payload?.isSnapshot?<circle key={d.key} cx={d.cx} cy={d.cy} r={5} fill={GREEN}/>:null} connectNulls={false} isAnimationActive={false}/>
+                  <Line type="monotone" dataKey="doel" name="Doel" stroke={ORG} strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false}/>
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -605,7 +524,9 @@ export default function App() {
                   </div>
                   {items.map(b=>(<div key={b.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 28px",gap:8,alignItems:"center",marginBottom:10}}>
                     <div><div style={{fontSize:12,fontWeight:500}}>{b.name}</div>{b.note&&<div style={{fontSize:10,color:"#667799"}}>{b.note}</div>}</div>
-                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                    <input type="number" placeholder="0" value={newSnap.values[b.id]??""} onFocus={e=>clearZero(e,setNewSnap,b.id)} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>
+                      <input type="number" placeholder="0" value={newSnap.values[b.id]??""} onFocus={e=>clearZero(e,b.id)} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpin}}/>
+                    </div>
                     <DeleteBtn onClick={()=>deleteBucket(b.id)}/>
                   </div>))}
                   {items.length===0&&!isAdding&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic",padding:"4px 0"}}>Geen posten — klik op "+ Post".</div>}
@@ -618,25 +539,22 @@ export default function App() {
                 </div>);
               })}
 
-              {/* Inleg sectie */}
               <div style={{fontSize:10,fontWeight:700,letterSpacing:.8,color:"#667799",marginBottom:12,paddingBottom:6,borderBottom:"2px solid #2a3a55"}}>INLEG BELEGGINGEN DEZE PERIODE</div>
               <div style={{background:CARD2,borderRadius:10,padding:14,marginBottom:20}}>
                 <div style={{marginBottom:14}}>
                   <label style={{fontSize:11,color:GREEN,display:"block",marginBottom:5,fontWeight:600}}>REGULIERE INLEG (vanuit inkomen)</label>
-                  <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span><input type="number" min="0" placeholder="0" value={newSnap.regularInleg??""} onChange={e=>setNewSnap(p=>({...p,regularInleg:e.target.value}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                  <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span><input type="number" min="0" placeholder="0" value={newSnap.regularInleg??""} onChange={e=>setNewSnap(p=>({...p,regularInleg:e.target.value}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpin}}/></div>
                   <div style={{fontSize:10,color:"#445566",marginTop:4}}>Telt mee voor spaardiscipline</div>
                 </div>
-
-                {/* Meerdere extra stortingen */}
                 <div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                     <label style={{fontSize:11,color:BLUE,fontWeight:600}}>EXTRA STORTINGEN</label>
                     <button onClick={addExtraStorting} style={{padding:"3px 10px",borderRadius:5,cursor:"pointer",fontSize:11,fontWeight:600,border:`1px solid ${BLUE}44`,background:"transparent",color:BLUE}}>+ Toevoegen</button>
                   </div>
-                  {(newSnap.extraStortingen||[]).length===0&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic"}}>Nog geen extra stortingen — bijv. schenkingen of terugbetalingen.</div>}
+                  {(newSnap.extraStortingen||[]).length===0&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic"}}>Nog geen extra stortingen.</div>}
                   {(newSnap.extraStortingen||[]).map(e=>(
                     <div key={e.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr 28px",gap:8,alignItems:"center",marginBottom:8}}>
-                      <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span><input type="number" min="0" placeholder="Bedrag" value={e.bedrag} onChange={ev=>updateExtraStorting(e.id,"bedrag",ev.target.value)} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                      <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span><input type="number" min="0" placeholder="Bedrag" value={e.bedrag} onChange={ev=>updateExtraStorting(e.id,"bedrag",ev.target.value)} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpin}}/></div>
                       <input type="date" value={e.datum} onChange={ev=>updateExtraStorting(e.id,"datum",ev.target.value)} style={inp()}/>
                       <DeleteBtn onClick={()=>removeExtraStorting(e.id)}/>
                     </div>
@@ -651,7 +569,7 @@ export default function App() {
                 return (<div key={g.id} style={{marginBottom:20}}>
                   {items.map(b=>(<div key={b.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 28px",gap:8,alignItems:"center",marginBottom:10}}>
                     <div><div style={{fontSize:12,fontWeight:500}}>{b.name}</div>{b.note&&<div style={{fontSize:10,color:"#667799"}}>{b.note}</div>}</div>
-                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span>                      <input type="number" min="0" placeholder="0" value={newSnap.values[b.id]??""} onFocus={e=>clearZero(e,setNewSnap,b.id)} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpinner}}/></div>
+                    <div style={{position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8899aa",fontSize:13}}>€</span><input type="number" min="0" placeholder="0" value={newSnap.values[b.id]??""} onFocus={e=>clearZero(e,b.id)} onChange={e=>setNewSnap(p=>({...p,values:{...p.values,[b.id]:e.target.value}}))} style={{...inp({paddingLeft:24,textAlign:"right"}),...noSpin}}/></div>
                     <DeleteBtn onClick={()=>deleteBucket(b.id)}/>
                   </div>))}
                   {items.length===0&&!isAdding&&<div style={{fontSize:11,color:"#445566",fontStyle:"italic",padding:"4px 0"}}>Geen schulden.</div>}
@@ -682,29 +600,29 @@ export default function App() {
           <div style={{maxWidth:620,margin:"0 auto",display:"flex",flexDirection:"column",gap:14}}>
             <div style={card()}>
               <div style={{fontSize:14,fontWeight:700,marginBottom:16}}>Groeiverwachting</div>
-              <div style={{marginBottom:14}}><label style={{fontSize:11,color:"#8899aa",display:"block",marginBottom:5,letterSpacing:.4}}>MAANDELIJKS INLEGGEN (€)</label><input type="number" value={monthly} onChange={e=>setMonthly(Number(e.target.value))} style={{...inp(),...noSpinner}}/></div>
-              <div><label style={{fontSize:11,color:"#8899aa",display:"block",marginBottom:5,letterSpacing:.4}}>VERWACHT JAARRENDEMENT (%)</label><input type="number" value={annualReturn} step="0.5" onChange={e=>setAnnualReturn(Number(e.target.value))} style={{...inp(),...noSpinner}}/><div style={{fontSize:11,color:"#445566",marginTop:6}}>Vanguard All-World historisch gemiddelde ≈ 7–9% per jaar</div></div>
+              <div style={{marginBottom:14}}><label style={{fontSize:11,color:"#8899aa",display:"block",marginBottom:5,letterSpacing:.4}}>MAANDELIJKS INLEGGEN (€)</label><input type="number" value={monthly} onChange={e=>setMonthly(Number(e.target.value))} style={{...inp(),...noSpin}}/></div>
+              <div><label style={{fontSize:11,color:"#8899aa",display:"block",marginBottom:5,letterSpacing:.4}}>VERWACHT JAARRENDEMENT (%)</label><input type="number" value={annualReturn} step="0.5" onChange={e=>setAnnualReturn(Number(e.target.value))} style={{...inp(),...noSpin}}/><div style={{fontSize:11,color:"#445566",marginTop:6}}>Vanguard All-World historisch gemiddelde ≈ 7–9% per jaar</div></div>
             </div>
             <div style={card()}>
               <div style={{fontSize:14,fontWeight:700,marginBottom:6}}>Kostenbasis beleggingen</div>
               <div style={{fontSize:12,color:"#8899aa",marginBottom:14}}>Bedrag ingelegd vóór je eerste snapshot.</div>
               <label style={{fontSize:11,color:"#8899aa",display:"block",marginBottom:5,letterSpacing:.4}}>BEGINKOSTENBASIS (€)</label>
-              <input type="number" value={startKb} onChange={e=>setStartKb(Number(e.target.value))} style={{...inp(),...noSpinner}}/>
+              <input type="number" value={startKb} onChange={e=>setStartKb(Number(e.target.value))} style={{...inp(),...noSpin}}/>
               <div style={{fontSize:11,color:"#445566",marginTop:6}}>Begin: {fmt(startKb)} · Totaal nu: {fmt(totaleKb)}</div>
             </div>
             <div style={card()}>
               <div style={{fontSize:14,fontWeight:700,marginBottom:6}}>Posten beheren</div>
-              <div style={{fontSize:12,color:"#8899aa",marginBottom:16}}>Sleep posten om de volgorde aan te passen. Klik op de naam om te hernoemen.</div>
+              <div style={{fontSize:12,color:"#8899aa",marginBottom:16}}>Sleep posten om de volgorde aan te passen. Klik op naam om te hernoemen.</div>
               {GROUPS.map(g=>(
                 <div key={g.id} style={{marginBottom:20}}>
                   <div style={{fontSize:11,fontWeight:700,color:g.color,marginBottom:8,letterSpacing:.4}}>{g.label.toUpperCase()}</div>
                   {buckets.filter(b=>b.group===g.id).map(b=>(
                     <div key={b.id} draggable onDragStart={e=>handleDragStart(e,b.id)} onDragOver={e=>handleDragOver(e,b.id)} onDrop={e=>handleDrop(e,b.id)} onDragLeave={()=>setDragOver(null)}
                       style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderBottom:"1px solid #1a2a40",borderRadius:8,background:dragOver===b.id?"rgba(0,229,204,.06)":"transparent",cursor:"grab",transition:"background .15s"}}>
-                      <span style={{color:"#445566",fontSize:16,cursor:"grab"}}>⠿</span>
+                      <span style={{color:"#445566",fontSize:16}}>⠿</span>
                       <div style={{flex:1}}>
                         {editingBucket===b.id
-                          ?(<input autoFocus value={editingName} onChange={e=>setEditingName(e.target.value)} onBlur={()=>{renameBucket(b.id,editingName);setEditingBucket(null);}} onKeyDown={e=>{if(e.key==="Enter"){renameBucket(b.id,editingName);setEditingBucket(null);}if(e.key==="Escape")setEditingBucket(null);}} style={{...inp(),padding:"4px 8px",fontSize:12,width:"100%"}}/>)
+                          ?(<input autoFocus value={editingName} onChange={e=>setEditingName(e.target.value)} onBlur={()=>{renameBucket(b.id,editingName);setEditingBucket(null);}} onKeyDown={e=>{if(e.key==="Enter"){renameBucket(b.id,editingName);setEditingBucket(null);}if(e.key==="Escape")setEditingBucket(null);}} style={{...inp(),padding:"4px 8px",fontSize:12}}/>)
                           :(<div style={{fontSize:12,fontWeight:500,cursor:"pointer"}} onClick={()=>{setEditingBucket(b.id);setEditingName(b.name);}}>{b.name} <span style={{fontSize:10,color:"#445566"}}>✏️</span></div>)
                         }
                         {b.note&&<div style={{fontSize:10,color:"#667799"}}>{b.note}</div>}
@@ -731,6 +649,43 @@ export default function App() {
         )}
 
       </div>
+
+      {/* PERIODES POPUP */}
+      {showPeriodes&&(
+        <div onClick={()=>setShowPeriodes(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:CARD,borderRadius:16,border:"1px solid #1e3050",maxWidth:950,width:"100%",maxHeight:"80vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"18px 24px",borderBottom:"1px solid #1e3050",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:15,fontWeight:700}}>Marktrendement per periode</div>
+              <button onClick={()=>setShowPeriodes(false)} style={{background:"transparent",border:"1px solid #2a3a55",color:"#8899aa",borderRadius:8,padding:"5px 14px",cursor:"pointer",fontSize:12}}>Sluiten</button>
+            </div>
+            <div style={{overflow:"auto",padding:"0 24px 24px"}}>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead><tr style={{borderBottom:"1px solid #1e3050"}}>
+                  {["Periode","Waarde begin","Reg. inleg","Extra stortingen","Verwacht einde","Werkelijk","Marktresultaat","Rendement"].map(h=>(
+                    <th key={h} style={{textAlign:h==="Periode"?"left":"right",padding:"12px 10px",fontSize:10,color:"#667799",fontWeight:600,position:"sticky",top:0,background:CARD}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>{periodeData.map((p,i)=>{ const pos=p.marktResult>=0; return (
+                  <tr key={i} style={{borderBottom:"1px solid #131f35"}}>
+                    <td style={{padding:"11px 10px",fontSize:11,color:"#aabbcc"}}>{fmtDate(p.van)} → {fmtDate(p.tot)}</td>
+                    <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.prevFv)}</td>
+                    <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:GREEN}}>{fmt(p.regularInleg)}</td>
+                    <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:p.totExtraStorting>0?BLUE:"#445566"}}>
+                      {p.extraStortingen.length>0?p.extraStortingen.map((e,j)=>(<div key={j}>{fmt(Number(e.bedrag||0))} <span style={{fontSize:9,color:"#667799"}}>{fmtDate(e.datum)}</span></div>)):"—"}
+                    </td>
+                    <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:"#8899aa"}}>{fmt(p.verwacht)}</td>
+                    <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,color:PURP,fontWeight:600}}>{fmt(p.werkelijk)}</td>
+                    <td style={{padding:"11px 10px",textAlign:"right",fontSize:11,fontWeight:700,color:pos?TEAL:RED}}>{pos?"+":""}{fmt(p.marktResult)}</td>
+                    <td style={{padding:"11px 10px",textAlign:"right"}}>
+                      <span style={{background:pos?"rgba(0,229,204,.12)":"rgba(255,68,102,.12)",color:pos?TEAL:RED,padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700}}>{pos?"+":""}{p.marktPct}%</span>
+                    </td>
+                  </tr>);
+                })}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
